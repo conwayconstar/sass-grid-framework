@@ -1,0 +1,194 @@
+// Container Widths
+//
+// Define container widths, these will be applied to the
+// .container element. Values must be ascending.
+
+$container-widths: (
+        mobile: 360px,
+        mobile--large: 480px,
+        tablet: 720px,
+        tablet--large: 960px,
+        desktop: 1160px,
+);
+
+// Device break-points
+//
+// Define device break-points. Must start with a breakpoint of 0 &
+// values must be ascending.
+
+$grid-breakpoints: (
+        reset: 0,
+        mobile: 424px,
+        mobile--large: 544px,
+        tablet: 784px,
+        tablet--large: 1024px,
+        desktop: 1200px,
+);
+
+// Columns
+//
+// Specify amount of columns and the size of the gap.
+$columns: 12;
+$column-gap: 2rem;
+
+// Device breakpoint up. If the breakpoint is the smallest it will
+// return without media query.
+@mixin device-up($name, $breakpoints: $grid-breakpoints) {
+  $min: map-get($breakpoints, $name);
+  @if if(0 != $min, $min, null) {
+    @media (min-width: $min) {
+      @content;
+    }
+  } @else {
+    @content;
+  }
+}
+
+// Container
+.container {
+  width: 100%;
+  padding-right: ($column-gap / 2);
+  padding-left: ($column-gap / 2);
+  margin-right: auto;
+  margin-left: auto;
+
+  @each $breakpoint, $width in $container-widths {
+    @include device-up($breakpoint, $grid-breakpoints) {
+      max-width: $width;
+    }
+  }
+}
+
+// Column wrap
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: ($column-gap / -2);
+  margin-left: ($column-gap / -2);
+}
+
+// Build Columns Mixin
+@mixin build-columns($columns: $columns, $gap: $column-gap, $breakpoints: $grid-breakpoints) {
+  // Set Defaults
+
+  %defaults {
+    position: relative;
+    width: 100%;
+    min-height: 1px;
+    padding-right: ($gap / 2);
+    padding-left: ($gap / 2);
+  }
+
+  // Loop Breakpoints
+
+  @each $breakpoint in map-keys($breakpoints) {
+    $min: map-get($breakpoints, $breakpoint);
+    $label: if(if(0 != $min, $min, null), $breakpoint, 'all');
+
+    // Extend Defaults
+    .#{$label},
+    .#{$label}-auto {
+      @extend %defaults;
+    }
+
+    @for $i from 1 through $columns {
+      .#{$label}-#{$i} {
+        @extend %defaults;
+      }
+    }
+
+    // Set responsive properties
+
+    .#{$label} {
+      @include device-up($breakpoint, $breakpoints) {
+        &--float{
+          &-left {
+            float: left !important;
+          }
+
+          &-right {
+            float: right !important;
+          }
+
+          &-none {
+            float: none !important;
+          }
+        }
+
+        &--display {
+          &-none {
+            display: none !important;
+          }
+
+          &-block {
+            display: block !important;
+          }
+
+          &-inline {
+            display: inline !important;
+
+            &-block {
+              display: inline-block !important;
+            }
+
+            &-flex {
+              display: inline-flex !important;
+            }
+          }
+
+          &-table {
+            display: table !important;
+
+            &-row {
+              display: table-row !important;
+            }
+
+            &-cell {
+              display: table-cell !important;
+            }
+          }
+
+          &-flex {
+            display: flex !important;
+          }
+        }
+
+        &--text {
+          &-left {
+            text-align: left !important;
+          }
+
+          &-right {
+            text-align: right !important;
+          }
+
+          &-center {
+            text-align: center !important;
+          }
+        }
+      }
+    }
+
+    // Calculate grid sizes
+
+    @include device-up($breakpoint, $breakpoints) {
+      @for $i from 1 through $columns {
+        .#{$label}-#{$i} {
+          flex: 0 0 calc(100% * #{$i} / #{$columns});
+          max-width: calc(100% * #{$i} / #{$columns});
+
+          // Calculate Offset
+
+          @if not ($label == "all" and $i == 0) {
+            &--offset {
+              $num: $i / $columns;
+              margin-left: if($num == 0, 0, calc(100% * #{$i} / #{$columns}));
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@include build-columns();
