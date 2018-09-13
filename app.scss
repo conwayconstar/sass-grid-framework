@@ -31,16 +31,87 @@ $grid-breakpoints: (
 $columns: 12;
 $column-gap: 2rem;
 
+// Minimum device breakpoint width. Smallest breakpoint will be a null value
+
+@function device-min($name, $breakpoints: $grid-breakpoints) {
+  $min: map-get($breakpoints, $name);
+
+  @return if(0 != $min, $min, null);
+}
+
+// Maximum device breakpoint width. Largest breakpoint will be a null value
+
+@function device-max($name, $breakpoints: $grid-breakpoints, $breakpoint-names: map-keys($breakpoints)) {
+  $next: if(index($breakpoint-names, $name) < length($breakpoint-names),
+          nth($breakpoint-names,
+                  index($breakpoint-names, $name) + 1), null);
+
+  @return if($next, device-min($next, $breakpoints) - .02px, null);
+}
+
 // Device breakpoint up. If the breakpoint is the smallest it will
 // return without media query.
 @mixin device-up($name, $breakpoints: $grid-breakpoints) {
-  $min: map-get($breakpoints, $name);
-  @if if(0 != $min, $min, null) {
+  $min: device-min($name, $breakpoints);
+  @if $min {
     @media (min-width: $min) {
       @content;
     }
   } @else {
     @content;
+  }
+}
+
+
+// Device breakpoint down. If the breakpoint is the largest it will return without media query.
+@mixin device-down($name, $breakpoints: $grid-breakpoints) {
+  $max: device-max($name, $breakpoints);
+  @if $max {
+    @media (max-width: $max) {
+      @content;
+    }
+  } @else {
+    @content;
+  }
+}
+
+// Device breakpoint between
+@mixin device-between($lower, $upper, $breakpoints: $grid-breakpoints) {
+  $min: device-min($lower, $breakpoints);
+  $max: device-max($upper, $breakpoints);
+
+  @if $min != null and $max != null {
+    @media (min-width: $min) and (max-width: $max) {
+      @content;
+    }
+  } @else if $max == null {
+    @include device-up($lower, $breakpoints) {
+      @content;
+    }
+  } @else if $min == null {
+    @include device-down($upper, $breakpoints) {
+      @content;
+    }
+  }
+}
+
+// Device breakpoint only
+@mixin device-only($name, $breakpoints: $grid-breakpoints) {
+  $min: device-min($name, $breakpoints);
+  $max: device-max($name, $breakpoints);
+
+  @if $min != null and $max != null {
+    @media (min-width: $min) and (max-width: $max) {
+      @content;
+    }
+  } @else if $max == null {
+    @include device-up($name, $breakpoints) {
+      @content;
+    }
+  } @else if $min == null {
+    @include device-down($name, $breakpoints) {
+      @content;
+    }
   }
 }
 
@@ -82,8 +153,8 @@ $column-gap: 2rem;
   // Loop Breakpoints
 
   @each $breakpoint in map-keys($breakpoints) {
-    $min: map-get($breakpoints, $breakpoint);
-    $label: if(if(0 != $min, $min, null), $breakpoint, 'all');
+    $min: device-min($breakpoint, $breakpoints);
+    $label: if($min, $breakpoint, 'all');
 
     // Extend Defaults
     .#{$label},
